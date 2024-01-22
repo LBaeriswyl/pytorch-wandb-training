@@ -1,7 +1,7 @@
 method: grid
 metric:
-  name: loss
-  goal: minimize
+  name: test_acc
+  goal: maximize
 parameters:
   dataset_name:
     value: mnist

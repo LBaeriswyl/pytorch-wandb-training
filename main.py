@@ -18,17 +18,19 @@ else:
     device = torch.device("cpu")
 
 
-def get_dataloader(batch_size):
+def get_dataloaders(batch_size):
     transform = transforms.Compose(
         [transforms.ToTensor(),
          transforms.Normalize((0.1307,), (0.3081,))])
     # download MNIST training dataset
-    dataset = datasets.MNIST(".", train=True, download=True,
+    trainset = datasets.MNIST("./cache", train=True, download=True,
                              transform=transform)
-    sub_dataset = torch.utils.data.Subset(
-        dataset, indices=range(0, len(dataset), 5))
-    loader = torch.utils.data.DataLoader(sub_dataset, batch_size=batch_size)
-    return loader
+    # download MNIST test dataset
+    testset = datasets.MNIST("./cache", train=False, download=True,
+                             transform=transform)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False)
+    return trainloader, testloader
 
 
 def get_model(fc_layer_size, dropout):
@@ -55,15 +57,20 @@ def get_optimizer(network, optimizer, learning_rate):
     return optimizer
 
 
-def train_epoch(network, loader, optimizer):
-    cumu_loss = 0
+def train_epoch(model, loader, optimizer): 
+    model.train()
+
+    total_loss = 0
+    total_correct = 0
     for _, (data, target) in enumerate(loader):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
 
         #Forward pass
-        loss = F.cross_entropy(network(data), target)
-        cumu_loss += loss.item()
+        pred = model(data)
+        loss = F.cross_entropy(pred, target)
+        total_loss += loss.item()
+        total_correct += pred.argmax(dim=1).eq(target).sum().item()
 
         #Backward pass + weight update
         loss.backward()
@@ -71,23 +78,48 @@ def train_epoch(network, loader, optimizer):
 
         wandb.log({"batch loss": loss.item()})
 
-    return cumu_loss / len(loader)
+    epoch_loss = total_loss / len(loader)
+    epoch_acc = total_correct / len(loader.dataset)
+
+    return epoch_loss, epoch_acc
+
+
+def test_epoch(model, loader):
+    model.eval()
+
+    total_loss = 0
+    total_correct = 0
+    with torch.no_grad():
+        for _, (data, target) in enumerate(loader):
+            data, target = data.to(device), target.to(device)
+
+            #Forward pass
+            pred = model(data)
+            loss = F.cross_entropy(pred, target)
+            total_loss += loss.item()
+            total_correct += pred.argmax(dim=1).eq(target).sum().item()
+        
+    test_loss = total_loss / len(loader)
+    test_acc = total_correct / len(loader.dataset)
+
+    return test_loss, test_acc
 
 
 def train_model(config=None):
     with wandb.init(config=config):
         config = wandb.config
 
-        loader = get_dataloader(config.batch_size)
+        trainloader, testloader = get_dataloaders(config.batch_size)
         model = get_model(config.fc_layer_size, config.dropout)
         optimizer = get_optimizer(model, config.optimizer, config.learning_rate)
 
         model.to(device)
-        model.train()
 
         for epoch in range(1, config.epochs+1):
-            avg_loss = train_epoch(model, loader, optimizer)
-            wandb.log({"loss": avg_loss, "epoch": epoch})
+            train_epoch_loss, train_epoch_acc = train_epoch(model, trainloader, optimizer)
+            test_loss, test_acc = test_epoch(model, testloader)
+            wandb.log({"train loss": train_epoch_loss, "train acc": train_epoch_acc,
+                       "test loss": test_loss, "test acc": test_acc, "epoch": epoch})
 
 
 def wandb_sweep(config, project):
