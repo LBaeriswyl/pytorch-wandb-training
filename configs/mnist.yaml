@@ -1,4 +1,4 @@
-method: grid
+method: random
 metric:
   name: test_acc
   goal: maximize
@@ -10,13 +10,12 @@ parameters:
   optimizer:
     values: ['adam', 'sgd', 'adamW']
   fc_layer_size:
-    values: [128, 256, 512]
+    values: [128, 256, 512, 1024]
   dropout:
-    values: [0.1, 0.2, 0.3]
+    values: [0.0, 0.3, 0.5, 0.7]
   learning_rate:
-    values: [0.001, 0.01, 0.1]
+    values: [0.00001, 0.00003, 0.0001, 0.0003, 0.001, 0.003, 0.01, 0.03]
   batch_size:
-    values: [4, 8, 16, 32, 64, 128, 256]
+    values: [1, 4, 8, 16, 32, 64, 128, 256]
   weight_decay:
-    values: [0.0, 0.001, 0.01]
-  
+    values: [0.0, 0.00001, 0.0001, 0.001, 0.01]

@@ -118,13 +118,13 @@ def train_model(config=None):
         for epoch in range(1, config.epochs+1):
             train_epoch_loss, train_epoch_acc = train_epoch(model, trainloader, optimizer)
             test_loss, test_acc = test_epoch(model, testloader)
-            wandb.log({"train loss": train_epoch_loss, "train acc": train_epoch_acc,
-                       "test loss": test_loss, "test acc": test_acc, "epoch": epoch})
+            wandb.log({"train_loss": train_epoch_loss, "train_acc": train_epoch_acc,
+                       "test_loss": test_loss, "test_acc": test_acc, "epoch": epoch})
 
 
-def wandb_sweep(config, project):
+def wandb_sweep(config, project, count):
     sweep_id = wandb.sweep(config, project=project)
-    wandb.agent(sweep_id, train_model)
+    wandb.agent(sweep_id, train_model, count=count)
     wandb.finish()
 
 
@@ -134,7 +134,7 @@ def load_config(config_file):
     return config
 
 
-def main(config_file, dry_run, project):
+def main(config_file, dry_run, project, count):
     print(f"Running on device: {device}")
     if dry_run:
         print("Running in dry run mode.")
@@ -143,7 +143,7 @@ def main(config_file, dry_run, project):
     print("Sweep configuration:")
     print(config)
     print("Starting sweep...")
-    wandb_sweep(config, project)
+    wandb_sweep(config, project, count)
     print("Sweep completed.")
 
 
@@ -152,5 +152,6 @@ if __name__ == "__main__":
     parser.add_argument("config_file", type=str, help="Path to config file")
     parser.add_argument("--dry-run", action="store_true", help="Run locally without logging to wandb")
     parser.add_argument("--project", type=str, help="Wandb project name")
+    parser.add_argument("--count", type=int, help="Number of runs to execute")
     args = parser.parse_args()
-    main(args.config_file, args.dry_run, args.project)
+    main(args.config_file, args.dry_run, args.project, args.count)
