@@ -76,7 +76,7 @@ def train_epoch(model, loader, optimizer):
         loss.backward()
         optimizer.step()
 
-        wandb.log({"batch loss": loss.item()})
+        wandb.log({"batch_loss": loss.item()})
 
     epoch_loss = total_loss / len(loader)
     epoch_acc = total_correct / len(loader.dataset)
