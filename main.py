@@ -90,7 +90,7 @@ def train_model(config=None):
             wandb.log({"loss": avg_loss, "epoch": epoch})
 
 
-def wandb_sweep(config, dry_run, project):
+def wandb_sweep(config, project):
     sweep_id = wandb.sweep(config, project=project)
     wandb.agent(sweep_id, train_model)
     wandb.finish()
@@ -111,7 +111,7 @@ def main(config_file, dry_run, project):
     print("Sweep configuration:")
     print(config)
     print("Starting sweep...")
-    wandb_sweep(config, dry_run, project)
+    wandb_sweep(config, project)
     print("Sweep completed.")
 
 
